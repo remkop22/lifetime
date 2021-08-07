@@ -31,9 +31,6 @@ where
 
     #[inline]
     fn into_static(self) -> Cow<'static, B> {
-        match self {
-            Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
-            Cow::Owned(x) => Cow::Owned(x),
-        }
+        Cow::Owned(self.into_owned())
     }
 }
