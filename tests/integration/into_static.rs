@@ -16,3 +16,21 @@ fn option_none_cow() {
     let actual = option.clone().into_static();
     assert_eq!(actual, None);
 }
+
+#[cfg(feature = "unstable")]
+#[test]
+fn result_ok_cow() {
+    let ok_borrowed: Result<Cow<str>, Cow<str>> = Ok(Cow::Borrowed("Elm"));
+    let actual = ok_borrowed.clone().into_static();
+    assert_eq!(actual, ok_borrowed);
+    assert_matches!(actual, Ok(Cow::Owned(_)));
+}
+
+#[cfg(feature = "unstable")]
+#[test]
+fn result_err_cow() {
+    let ok_borrowed: Result<Cow<str>, Cow<str>> = Err(Cow::Borrowed("Elm"));
+    let actual = ok_borrowed.clone().into_static();
+    assert_eq!(actual, ok_borrowed);
+    assert_matches!(actual, Err(Cow::Owned(_)));
+}

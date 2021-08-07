@@ -12,3 +12,6 @@ description = "Traits and derive macros for efficiently reusing your stucts or e
 
 [dev-dependencies]
 assert_matches = "1.5"
+
+[features]
+unstable = []

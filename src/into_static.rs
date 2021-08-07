@@ -46,3 +46,18 @@ where
         self.map(IntoStatic::into_static)
     }
 }
+
+#[cfg(feature = "unstable")]
+impl<T, E> IntoStatic for Result<T, E>
+where
+    T: IntoStatic,
+    E: IntoStatic,
+{
+    type Static = Result<T::Static, E::Static>;
+
+    #[inline]
+    fn into_static(self) -> Result<T::Static, E::Static> {
+        self.map(IntoStatic::into_static)
+            .map_err(IntoStatic::into_static)
+    }
+}

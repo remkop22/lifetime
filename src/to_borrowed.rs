@@ -41,7 +41,7 @@ where
     type Borrowed = Option<<&'o T as ToBorrowed>::Borrowed>;
 
     #[inline]
-    fn to_borrowed(self) -> Self::Borrowed {
+    fn to_borrowed(self) -> Option<<&'o T as ToBorrowed>::Borrowed> {
         self.as_ref().map(ToBorrowed::to_borrowed)
     }
 }
