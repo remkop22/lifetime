@@ -34,3 +34,15 @@ where
         Cow::Owned(self.into_owned())
     }
 }
+
+impl<T> IntoStatic for Option<T>
+where
+    T: IntoStatic,
+{
+    type Static = Option<T::Static>;
+
+    #[inline]
+    fn into_static(self) -> Option<T::Static> {
+        self.map(IntoStatic::into_static)
+    }
+}
