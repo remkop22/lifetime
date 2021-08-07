@@ -4,7 +4,7 @@ use std::borrow::Cow;
 ///
 /// # Examples
 /// ```
-/// use reuse::IntoStatic;
+/// use lifetime::IntoStatic;
 /// use std::borrow::Cow;
 ///
 /// let string = String::from("Hi");

@@ -1,5 +1,5 @@
 use assert_matches::assert_matches;
-use reuse::ToBorrowed;
+use lifetime::ToBorrowed;
 use std::borrow::Cow;
 
 #[test]

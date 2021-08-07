@@ -1,13 +1,13 @@
 [package]
-name = "reuse"
+name = "lifetime"
 version = "0.1.0-dev"
 edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"
 keywords = ["cow", "IntoStatic", "ToBorrowed", "borrow", "convert"]
 categories = ["rust-patterns"]
-repository = "https://gitlab.com/JonasJebing/reuse"
-documentation = "https://docs.rs/reuse/"
+repository = "https://gitlab.com/JonasJebing/lifetime"
+documentation = "https://docs.rs/lifetime/"
 description = "Traits and derive macros for efficiently reusing your stucts or enums with any lifetime requirement"
 
 [dev-dependencies]

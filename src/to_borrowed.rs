@@ -4,7 +4,7 @@ use std::borrow::{Borrow, Cow};
 ///
 /// # Examples
 /// ```
-/// use reuse::ToBorrowed;
+/// use lifetime::ToBorrowed;
 /// use std::borrow::Cow;
 ///
 /// let owned: Cow<'static, str> = Cow::Owned(String::from("Hi"));
