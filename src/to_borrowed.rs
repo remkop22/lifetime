@@ -30,9 +30,6 @@ where
 
     #[inline]
     fn to_borrowed(self) -> Cow<'c, B> {
-        match self {
-            Cow::Borrowed(x) => Cow::Borrowed(x),
-            Cow::Owned(x) => Cow::Borrowed(x.borrow()),
-        }
+        Cow::Borrowed(self.borrow())
     }
 }
