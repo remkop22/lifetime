@@ -1,0 +1,12 @@
+[package]
+name = "reuse"
+version = "0.1.0-dev"
+edition = "2018"
+authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
+license = "MIT OR Apache-2.0"
+keywords = ["cow", "IntoStatic", "ToBorrowed", "borrow", "convert"]
+categories = ["rust-patterns", "data-structures"]
+repository = "https://gitlab.com/JonasJebing/reuse"
+documentation = "https://docs.rs/reuse/"
+
+[dependencies]
