@@ -33,3 +33,15 @@ where
         Cow::Borrowed(self.borrow())
     }
 }
+
+impl<'o, T> ToBorrowed for &'o Option<T>
+where
+    for<'t> &'t T: ToBorrowed,
+{
+    type Borrowed = Option<<&'o T as ToBorrowed>::Borrowed>;
+
+    #[inline]
+    fn to_borrowed(self) -> Self::Borrowed {
+        self.as_ref().map(ToBorrowed::to_borrowed)
+    }
+}
