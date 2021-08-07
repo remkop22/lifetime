@@ -1,5 +1,5 @@
-pub trait IntoStatic {
-    type Static: 'static;
+mod into_static;
+mod to_borrowed;
 
-    fn into_static(self) -> Self::Static;
-}
+pub use into_static::IntoStatic;
+pub use to_borrowed::ToBorrowed;

@@ -1,6 +1,6 @@
 [package]
 name = "reuse"
-version = "0.1.0-alpha"
+version = "0.1.0-dev"
 edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -10,4 +10,5 @@ repository = "https://gitlab.com/JonasJebing/reuse"
 documentation = "https://docs.rs/reuse/"
 description = "Traits and derive macros for efficiently reusing your stucts or enums with any lifetime requirement"
 
-[dependencies]
+[dev-dependencies]
+assert_matches = "1.5"
