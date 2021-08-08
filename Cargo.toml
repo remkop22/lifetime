@@ -10,8 +10,15 @@ repository = "https://gitlab.com/JonasJebing/lifetime"
 documentation = "https://docs.rs/lifetime/"
 description = "Traits and derive macros for efficiently reusing your stucts or enums with any lifetime requirement"
 
-[dev-dependencies]
-assert_matches = "1.5"
+[workspace]
+members = ["workspace/macros_impl"]
+default-members = ["workspace/macros_impl"]
 
 [features]
 unstable = []
+
+[dependencies]
+macros = { path = "workspace/macros", optional = true }
+
+[dev-dependencies]
+assert_matches = "1.5"

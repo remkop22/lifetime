@@ -2,22 +2,22 @@
 
 
 echo "---build"
-cargo build || exit
+cargo build --workspace || exit
 echo
 echo "---build --all-features"
-cargo build --all-features || exit
+cargo build --workspace --all-features || exit
 echo
 echo "---test"
-cargo test || exit
+cargo test --workspace || exit
 echo
 echo "---test --all-features"
-cargo test || exit
+cargo test --workspace --all-features || exit
 echo
 echo "---clippy --all-features --all-targets"
-cargo clippy --all-features --all-targets || exit
+cargo clippy --workspace --all-features --all-targets || exit
 echo
 echo "---doc"
-cargo doc || exit
+cargo doc --workspace || exit
 echo
 echo "---doc --all-features"
-cargo doc || exit
+cargo doc --workspace || exit
