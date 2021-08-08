@@ -1,9 +1,10 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
+use std::convert::TryFrom;
 use syn::{
-    punctuated::Punctuated, token::Comma, Data, DataStruct, DeriveInput, Field, Fields,
-    GenericArgument, GenericParam, Generics, Ident, Lifetime, LifetimeDef, PathArguments, Type,
-    TypeParamBound, TypePath,
+    punctuated::Punctuated, token::Comma, Data, DataEnum, DeriveInput, Field, Fields,
+    GenericArgument, GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef, PathArguments,
+    Type, TypeParamBound, TypePath, Variant,
 };
 
 pub fn derive(input: DeriveInput) -> TokenStream {
@@ -11,17 +12,17 @@ pub fn derive(input: DeriveInput) -> TokenStream {
     let generics = input.generics;
     let all_generics = add_lifetime(generics.clone(), ref_lifetime.clone());
     let borrowed_generics = replace_lifetimes(generics.clone(), ref_lifetime.clone());
-    let identifier = input.ident;
-    let struct_data = match &input.data {
-        Data::Struct(s) => s,
-        _ => panic!("only structs are supported"),
+    let ident = input.ident;
+    let fn_body = match &input.data {
+        Data::Struct(struct_data) => struct_constructor_call(&ident, &struct_data.fields),
+        Data::Enum(enum_data) => matched_enum_constructor_call(&ident, enum_data),
+        Data::Union(_) => panic!("only structs and enums are supported"),
     };
-    let fn_body = constructor_call(&identifier, struct_data);
     quote! {
-        impl #all_generics lifetime::ToBorrowed for & #ref_lifetime #identifier #generics {
-            type Borrowed = #identifier #borrowed_generics;
+        impl #all_generics lifetime::ToBorrowed for & #ref_lifetime #ident #generics {
+            type Borrowed = #ident #borrowed_generics;
 
-            fn to_borrowed(self) -> #identifier #borrowed_generics {
+            fn to_borrowed(self) -> #ident #borrowed_generics {
                 use lifetime::ToBorrowed;
 
                 #fn_body
@@ -44,16 +45,16 @@ fn replace_lifetimes(mut generics: Generics, new: Lifetime) -> Generics {
     generics
 }
 
-fn constructor_call(ident: &Ident, struct_data: &DataStruct) -> TokenStream {
-    match &struct_data.fields {
+fn struct_constructor_call(ident: &Ident, fields: &Fields) -> TokenStream {
+    match fields {
         Fields::Named(named_fields) => {
-            let fields_initialization = fields_initialization(&named_fields.named);
+            let fields_initialization = struct_fields_initialization(&named_fields.named);
             quote! {
                 #ident { #fields_initialization }
             }
         }
         Fields::Unnamed(unnamed_fields) => {
-            let fields_initialization = fields_initialization(&unnamed_fields.unnamed);
+            let fields_initialization = struct_fields_initialization(&unnamed_fields.unnamed);
             quote! {
                 #ident(#fields_initialization)
             }
@@ -62,35 +63,39 @@ fn constructor_call(ident: &Ident, struct_data: &DataStruct) -> TokenStream {
     }
 }
 
-fn fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
+fn struct_fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
     fields
         .iter()
         .enumerate()
-        .map(|(index, field)| field_initialization(index, field))
+        .map(|(index, field)| struct_field_initialization(index, field))
         .collect()
 }
 
-fn field_initialization(index: usize, field: &Field) -> TokenStream {
+fn struct_field_initialization(index: usize, field: &Field) -> TokenStream {
     match &field.ident {
-        Some(identifier) => {
+        Some(ident) => {
             if type_has_generic_lifetime(&field.ty) {
                 quote! {
-                    #identifier: self.#identifier.to_borrowed(),
+                    #ident: self.#ident.to_borrowed(),
                 }
             } else {
                 quote! {
-                    #identifier: self.#identifier,
+                    #ident: self.#ident,
                 }
             }
         }
         None => {
+            let index = Index {
+                index: u32::try_from(index).unwrap(),
+                span: Span::mixed_site(),
+            };
             if type_has_generic_lifetime(&field.ty) {
                 quote! {
-                    self.#index,
+                    self.#index.to_borrowed(),
                 }
             } else {
                 quote! {
-                    self.#index.to_borrowed(),
+                    self.#index,
                 }
             }
         }
@@ -145,9 +150,130 @@ fn type_path_has_generic_lifetime(type_path: &TypePath) -> bool {
     }
 }
 
+fn matched_enum_constructor_call(enum_ident: &Ident, enum_data: &DataEnum) -> TokenStream {
+    let patterns_and_construction: TokenStream = enum_data
+        .variants
+        .iter()
+        .map(|variant| variant_pattern_and_construction(enum_ident, variant))
+        .collect();
+    quote! {
+        match self {
+            #patterns_and_construction
+        }
+    }
+}
+
+fn variant_pattern_and_construction(enum_ident: &Ident, variant: &Variant) -> TokenStream {
+    let ident = EnumVariantIdent {
+        enum_ident: enum_ident.clone(),
+        variant_ident: variant.ident.clone(),
+    };
+    match &variant.fields {
+        Fields::Named(f) => {
+            let enum_fields_pattern = enum_fields_pattern(&f.named);
+            let enum_fields_initialization = enum_fields_initialization(&f.named);
+            quote! {
+                #ident { #enum_fields_pattern } => #ident { #enum_fields_initialization },
+            }
+        }
+        Fields::Unnamed(f) => {
+            let enum_fields_pattern = enum_fields_pattern(&f.unnamed);
+            let enum_fields_initialization = enum_fields_initialization(&f.unnamed);
+            quote! {
+                #ident ( #enum_fields_pattern ) => #ident ( #enum_fields_initialization ),
+            }
+        }
+        Fields::Unit => todo!(),
+    }
+}
+
+fn enum_fields_pattern(fields: &Punctuated<Field, Comma>) -> TokenStream {
+    fields
+        .iter()
+        .enumerate()
+        .map(|(i, f)| enum_field_pattern(i, f))
+        .collect()
+}
+
+fn enum_field_pattern(index: usize, field: &Field) -> TokenStream {
+    match &field.ident {
+        Some(ident) => quote! {
+            #ident,
+        },
+        None => {
+            let tuple_field_ident = tuple_field_ident(index);
+            quote! {
+                #tuple_field_ident,
+            }
+        }
+    }
+}
+
+fn tuple_field_ident(index: usize) -> Ident {
+    Ident::new(&format!("x{}", index), Span::mixed_site())
+}
+
+fn enum_fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
+    fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| enum_field_initialization(index, field))
+        .collect()
+}
+
+fn enum_field_initialization(index: usize, field: &Field) -> TokenStream {
+    match &field.ident {
+        Some(ident) => {
+            if type_has_generic_lifetime(&field.ty) {
+                quote! {
+                    #ident: #ident.to_borrowed(),
+                }
+            } else {
+                quote! {
+                    #ident: *#ident,
+                }
+            }
+        }
+        None => {
+            let tuple_field_ident = tuple_field_ident(index);
+            if type_has_generic_lifetime(&field.ty) {
+                quote! {
+                    #tuple_field_ident .to_borrowed(),
+                }
+            } else {
+                quote! {
+                    *#tuple_field_ident,
+                }
+            }
+        }
+    }
+}
+
+struct EnumVariantIdent {
+    enum_ident: Ident,
+    variant_ident: Ident,
+}
+
+impl quote::ToTokens for EnumVariantIdent {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            enum_ident,
+            variant_ident,
+        } = self;
+        let ident = quote! { #enum_ident :: #variant_ident };
+        tokens.extend(std::iter::once(ident));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_derive_input_to_output(input: TokenStream, expected: TokenStream) {
+        let actual = derive(parse(input));
+        println!("{:#}", actual);
+        assert_eq!(parse::<syn::Item>(actual), parse::<syn::Item>(expected),);
+    }
 
     #[track_caller]
     fn parse<T: syn::parse::Parse>(tokens: TokenStream) -> T {
@@ -155,14 +281,13 @@ mod tests {
     }
 
     #[test]
-    fn primitive_and_cow_str_struct() {
+    fn derive_primitive_and_cow_str_struct() {
         let input = quote! {
             struct Example<'a> {
                 primitive: usize,
                 cow: Cow<'a, str>,
             }
         };
-        let actual = derive(parse(input));
         let expected = quote! {
             impl<'ref_, 'a> lifetime::ToBorrowed for &'ref_ Example<'a> {
                 type Borrowed = Example<'ref_>;
@@ -177,21 +302,58 @@ mod tests {
                 }
             }
         };
-        println!("{:#}", actual);
-        assert_eq!(parse::<syn::Item>(actual), parse::<syn::Item>(expected),);
+        test_derive_input_to_output(input, expected);
     }
 
     #[test]
-    #[should_panic]
-    fn enum_() {
+    fn derive_tuple_struct() {
         let input = quote! {
-            enum Example<'a> {
-                Primitive {
-                    number: usize
-                },
-                Cow(Cow<'a, str>),
+            struct Example<'a>(usize, Cow<'a, str>);
+        };
+        let expected = quote! {
+            impl<'ref_, 'a> lifetime::ToBorrowed for &'ref_ Example<'a> {
+                type Borrowed = Example<'ref_>;
+
+                fn to_borrowed(self) -> Example<'ref_> {
+                    use lifetime::ToBorrowed;
+
+                    Example(self.0, self.1.to_borrowed(),)
+                }
             }
         };
-        derive(parse(input));
+        test_derive_input_to_output(input, expected);
+    }
+
+    #[test]
+    fn derive_enum() {
+        let input = quote! {
+            enum Example<'a> {
+                Primitive0 {
+                    number: usize
+                },
+                Primitive1(usize),
+                Cow0 {
+                    string: Cow<'a, str>
+                },
+                Cow1(Cow<'a, str>),
+            }
+        };
+        let expected = quote! {
+            impl<'ref_, 'a> lifetime::ToBorrowed for &'ref_ Example<'a> {
+                type Borrowed = Example<'ref_>;
+
+                fn to_borrowed(self) -> Example<'ref_> {
+                    use lifetime::ToBorrowed;
+
+                    match self {
+                        Example::Primitive0 { number, } => Example::Primitive0 { number: *number, },
+                        Example::Primitive1(x0,) => Example::Primitive1(*x0,),
+                        Example::Cow0 { string, } => Example::Cow0 { string: string.to_borrowed(), },
+                        Example::Cow1(x0,) => Example::Cow1(x0.to_borrowed(),),
+                    }
+                }
+            }
+        };
+        test_derive_input_to_output(input, expected);
     }
 }

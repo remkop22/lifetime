@@ -9,8 +9,12 @@ fn primitive_and_cow_str_struct() {
         cow: Cow<'a, str>,
     }
 
+    fn to_borrowed<'r, 'a>(x: &'r Example<'a>) -> Example<'r> {
+        ToBorrowed::to_borrowed(x)
+    }
+
     let example = Example::default();
-    let borrowed: Example = ToBorrowed::to_borrowed(&example);
+    let borrowed: Example = to_borrowed(&example);
     assert_eq!(example, borrowed);
 }
 
@@ -27,6 +31,40 @@ fn two_generic_lifetime_params() {
     }
 
     let example = Example::default();
+    let borrowed = to_borrowed(&example);
+    assert_eq!(example, borrowed);
+}
+
+#[test]
+fn tuple_struct() {
+    #[derive(ToBorrowed, Debug, Default, PartialEq)]
+    struct Example<'a>(usize, Cow<'a, str>);
+
+    fn to_borrowed<'r, 'a>(x: &'r Example<'a>) -> Example<'r> {
+        x.to_borrowed()
+    }
+
+    let example = Example::default();
+    let borrowed = to_borrowed(&example);
+    assert_eq!(example, borrowed);
+}
+
+#[test]
+fn enum_() {
+    #[allow(dead_code)]
+    #[derive(ToBorrowed, Debug, PartialEq)]
+    enum Example<'a> {
+        Primitive0 { number: usize },
+        Primitive1(usize),
+        Cow0 { string: Cow<'a, str> },
+        Cow1(Cow<'a, str>),
+    }
+
+    fn to_borrowed<'r, 'a>(x: &'r Example<'a>) -> Example<'r> {
+        ToBorrowed::to_borrowed(x)
+    }
+
+    let example = Example::Cow1(Default::default());
     let borrowed = to_borrowed(&example);
     assert_eq!(example, borrowed);
 }
