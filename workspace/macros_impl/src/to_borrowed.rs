@@ -7,7 +7,7 @@ use syn::{
 };
 
 pub fn derive(input: DeriveInput) -> TokenStream {
-    let ref_lifetime = Lifetime::new("'ref", Span::mixed_site());
+    let ref_lifetime = Lifetime::new("'ref_", Span::mixed_site());
     let generics = input.generics;
     let all_generics = add_lifetime(generics.clone(), ref_lifetime.clone());
     let borrowed_generics = replace_lifetimes(generics.clone(), ref_lifetime.clone());
@@ -164,10 +164,10 @@ mod tests {
         };
         let actual = derive(parse(input));
         let expected = quote! {
-            impl<'ref, 'a> lifetime::ToBorrowed for &'ref Example<'a> {
-                type Borrowed = Example<'ref>;
+            impl<'ref_, 'a> lifetime::ToBorrowed for &'ref_ Example<'a> {
+                type Borrowed = Example<'ref_>;
 
-                fn to_borrowed(self) -> Example<'ref> {
+                fn to_borrowed(self) -> Example<'ref_> {
                     use lifetime::ToBorrowed;
 
                     Example {
