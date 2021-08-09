@@ -2,9 +2,11 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::convert::TryFrom;
 use syn::{
-    punctuated::Punctuated, token::Comma, Data, DataEnum, DeriveInput, Field, Fields,
-    GenericArgument, GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef, PathArguments,
-    Type, TypeParamBound, TypePath, Variant,
+    punctuated::Punctuated,
+    token::Comma,
+    visit::{self, Visit},
+    Data, DataEnum, DeriveInput, Field, Fields, GenericParam, Generics, Ident, Index, Lifetime,
+    LifetimeDef, Type, Variant,
 };
 
 pub fn derive(input: DeriveInput) -> TokenStream {
@@ -103,51 +105,23 @@ fn struct_field_initialization(index: usize, field: &Field) -> TokenStream {
 }
 
 fn type_has_generic_lifetime(ty: &Type) -> bool {
-    match ty {
-        Type::Array(array) => type_has_generic_lifetime(&array.elem),
-        Type::BareFn(_) => false,
-        Type::Group(group) => type_has_generic_lifetime(&group.elem),
-        Type::ImplTrait(impl_trait) => impl_trait.bounds.iter().any(|bound| match bound {
-            TypeParamBound::Trait(_) => false,
-            TypeParamBound::Lifetime(_) => true,
-        }),
-        Type::Infer(_) => true,
-        Type::Macro(_) => true,
-        Type::Never(_) => false,
-        Type::Paren(paren) => type_has_generic_lifetime(&paren.elem),
-        Type::Path(type_path) => type_path_has_generic_lifetime(type_path),
-        Type::Ptr(_) => true,
-        Type::Reference(_) => true,
-        Type::Slice(slice) => type_has_generic_lifetime(&slice.elem),
-        Type::TraitObject(trait_object) => trait_object.bounds.iter().any(|bound| match bound {
-            TypeParamBound::Trait(_) => false,
-            TypeParamBound::Lifetime(_) => true,
-        }),
-        Type::Tuple(tuple) => tuple.elems.iter().any(|ty| type_has_generic_lifetime(ty)),
-        Type::Verbatim(_) => false,
-        _ => false,
+    struct Visitor {
+        has_generic_lifetime: bool,
     }
-}
-
-fn type_path_has_generic_lifetime(type_path: &TypePath) -> bool {
-    if let Some(_qself) = &type_path.qself {
-        return true;
+    impl Visit<'_> for Visitor {
+        fn visit_lifetime(&mut self, lifetime: &Lifetime) {
+            if lifetime.ident != "static" {
+                self.has_generic_lifetime = true
+            } else {
+                visit::visit_lifetime(self, lifetime)
+            }
+        }
     }
-    let last_segment = match type_path.path.segments.last() {
-        None => return false,
-        Some(l) => l,
+    let mut visitor = Visitor {
+        has_generic_lifetime: false,
     };
-    match &last_segment.arguments {
-        PathArguments::None => false,
-        PathArguments::AngleBracketed(a) => a.args.iter().any(|arg| match arg {
-            GenericArgument::Lifetime(_) => true,
-            GenericArgument::Type(ty) => type_has_generic_lifetime(ty),
-            GenericArgument::Binding(binding) => type_has_generic_lifetime(&binding.ty),
-            GenericArgument::Constraint(_) => false,
-            GenericArgument::Const(_) => false,
-        }),
-        PathArguments::Parenthesized(_) => false,
-    }
+    Visit::visit_type(&mut visitor, ty);
+    visitor.has_generic_lifetime
 }
 
 fn matched_enum_constructor_call(enum_ident: &Ident, enum_data: &DataEnum) -> TokenStream {
@@ -238,7 +212,7 @@ fn enum_field_initialization(index: usize, field: &Field) -> TokenStream {
             let tuple_field_ident = tuple_field_ident(index);
             if type_has_generic_lifetime(&field.ty) {
                 quote! {
-                    #tuple_field_ident .to_borrowed(),
+                    #tuple_field_ident.to_borrowed(),
                 }
             } else {
                 quote! {
@@ -351,6 +325,25 @@ mod tests {
                         Example::Cow0 { string, } => Example::Cow0 { string: string.to_borrowed(), },
                         Example::Cow1(x0,) => Example::Cow1(x0.to_borrowed(),),
                     }
+                }
+            }
+        };
+        test_derive_input_to_output(input, expected);
+    }
+
+    #[test]
+    fn derive_struct_with_static_reference() {
+        let input = quote! {
+            struct Example<'a>(&'static Location<'static>, Cow<'a, str>);
+        };
+        let expected = quote! {
+            impl<'ref_, 'a> lifetime::ToBorrowed for &'ref_ Example<'a> {
+                type Borrowed = Example<'ref_>;
+
+                fn to_borrowed(self) -> Example<'ref_> {
+                    use lifetime::ToBorrowed;
+
+                    Example(self.0, self.1.to_borrowed(),)
                 }
             }
         };
