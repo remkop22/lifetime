@@ -1,5 +1,5 @@
 use lifetime::ToBorrowed;
-use std::borrow::Cow;
+use std::{borrow::Cow, panic::Location};
 
 #[test]
 fn primitive_and_cow_str_struct() {
@@ -65,6 +65,20 @@ fn enum_() {
     }
 
     let example = Example::Cow1(Default::default());
+    let borrowed = to_borrowed(&example);
+    assert_eq!(example, borrowed);
+}
+
+#[test]
+fn derive_struct_with_static_reference() {
+    #[derive(ToBorrowed, Debug, PartialEq)]
+    struct Example<'a>(&'static Location<'static>, Cow<'a, str>);
+
+    fn to_borrowed<'r, 'a>(x: &'r Example<'a>) -> Example<'r> {
+        ToBorrowed::to_borrowed(x)
+    }
+
+    let example = Example(Location::caller(), Default::default());
     let borrowed = to_borrowed(&example);
     assert_eq!(example, borrowed);
 }
