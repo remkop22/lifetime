@@ -15,7 +15,7 @@ pub fn derive(input: DeriveInput) -> TokenStream {
     if has_generic_type(&generics) {
         panic!("generic type parameters are not supported");
     }
-    let static_generics = replace_lifetimes(generics.clone(), static_lifetime);
+    let static_generics = replace_lifetimes(generics.clone(), &static_lifetime);
     let ident = input.ident;
     let fn_body = ModifiedClone {
         ident: &ident,

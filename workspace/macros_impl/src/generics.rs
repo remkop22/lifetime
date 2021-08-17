@@ -14,7 +14,7 @@ pub(crate) fn add_lifetime(mut generics: Generics, lifetime: Lifetime) -> Generi
     generics
 }
 
-pub(crate) fn replace_lifetimes(mut generics: Generics, new: Lifetime) -> Generics {
+pub(crate) fn replace_lifetimes(mut generics: Generics, new: &Lifetime) -> Generics {
     for old in generics.lifetimes_mut() {
         *old = LifetimeDef::new(new.clone());
     }
