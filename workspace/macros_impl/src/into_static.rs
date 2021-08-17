@@ -1,3 +1,7 @@
+use crate::{
+    generics::{has_generic_type, replace_lifetimes},
+    ident::{tuple_field_ident, EnumVariantIdent},
+};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::convert::TryFrom;
@@ -7,8 +11,6 @@ use syn::{
     visit::{self, Visit},
     Data, DataEnum, DeriveInput, Field, Fields, Ident, Index, Lifetime, Type, Variant,
 };
-
-use crate::generics::{has_generic_type, replace_lifetimes};
 
 pub fn derive(input: DeriveInput) -> TokenStream {
     let static_lifetime = Lifetime::new("'static", Span::mixed_site());
@@ -172,10 +174,6 @@ fn enum_field_pattern(index: usize, field: &Field) -> TokenStream {
     }
 }
 
-fn tuple_field_ident(index: usize) -> Ident {
-    Ident::new(&format!("x{}", index), Span::mixed_site())
-}
-
 fn enum_fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
     fields
         .iter()
@@ -209,22 +207,6 @@ fn enum_field_initialization(index: usize, field: &Field) -> TokenStream {
                 }
             }
         }
-    }
-}
-
-struct EnumVariantIdent {
-    enum_ident: Ident,
-    variant_ident: Ident,
-}
-
-impl quote::ToTokens for EnumVariantIdent {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            enum_ident,
-            variant_ident,
-        } = self;
-        let ident = quote! { #enum_ident :: #variant_ident };
-        tokens.extend(std::iter::once(ident));
     }
 }
 
