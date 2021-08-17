@@ -12,6 +12,9 @@ use syn::{
 pub fn derive(input: DeriveInput) -> TokenStream {
     let ref_lifetime = Lifetime::new("'ref_", Span::mixed_site());
     let generics = input.generics;
+    if has_generic_type(&generics) {
+        panic!("generic type parameters are not supported");
+    }
     let all_generics = add_lifetime(generics.clone(), ref_lifetime.clone());
     let borrowed_generics = replace_lifetimes(generics.clone(), ref_lifetime.clone());
     let ident = input.ident;
@@ -31,6 +34,13 @@ pub fn derive(input: DeriveInput) -> TokenStream {
             }
         }
     }
+}
+
+fn has_generic_type(generics: &Generics) -> bool {
+    generics
+        .params
+        .iter()
+        .any(|p| matches!(p, GenericParam::Type(_)))
 }
 
 fn add_lifetime(mut generics: Generics, lifetime: Lifetime) -> Generics {
@@ -348,5 +358,14 @@ mod tests {
             }
         };
         test_derive_input_to_output(input, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn derive_struct_with_generic_type() {
+        let input = quote! {
+            struct Example<T>(T);
+        };
+        derive(parse(input));
     }
 }
