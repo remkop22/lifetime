@@ -5,9 +5,10 @@ use syn::{
     punctuated::Punctuated,
     token::Comma,
     visit::{self, Visit},
-    Data, DataEnum, DeriveInput, Field, Fields, GenericParam, Generics, Ident, Index, Lifetime,
-    LifetimeDef, Type, Variant,
+    Data, DataEnum, DeriveInput, Field, Fields, Ident, Index, Lifetime, Type, Variant,
 };
+
+use crate::generics::{has_generic_type, replace_lifetimes};
 
 pub fn derive(input: DeriveInput) -> TokenStream {
     let static_lifetime = Lifetime::new("'static", Span::mixed_site());
@@ -33,20 +34,6 @@ pub fn derive(input: DeriveInput) -> TokenStream {
             }
         }
     }
-}
-
-fn has_generic_type(generics: &Generics) -> bool {
-    generics
-        .params
-        .iter()
-        .any(|p| matches!(p, GenericParam::Type(_)))
-}
-
-fn replace_lifetimes(mut generics: Generics, new: Lifetime) -> Generics {
-    for old in generics.lifetimes_mut() {
-        *old = LifetimeDef::new(new.clone());
-    }
-    generics
 }
 
 fn struct_constructor_call(ident: &Ident, fields: &Fields) -> TokenStream {

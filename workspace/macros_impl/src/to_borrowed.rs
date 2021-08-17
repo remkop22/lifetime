@@ -1,3 +1,4 @@
+use crate::generics::{add_lifetime, has_generic_type, replace_lifetimes};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::convert::TryFrom;
@@ -5,8 +6,7 @@ use syn::{
     punctuated::Punctuated,
     token::Comma,
     visit::{self, Visit},
-    Data, DataEnum, DeriveInput, Field, Fields, GenericParam, Generics, Ident, Index, Lifetime,
-    LifetimeDef, Type, Variant,
+    Data, DataEnum, DeriveInput, Field, Fields, Ident, Index, Lifetime, Type, Variant,
 };
 
 pub fn derive(input: DeriveInput) -> TokenStream {
@@ -34,27 +34,6 @@ pub fn derive(input: DeriveInput) -> TokenStream {
             }
         }
     }
-}
-
-fn has_generic_type(generics: &Generics) -> bool {
-    generics
-        .params
-        .iter()
-        .any(|p| matches!(p, GenericParam::Type(_)))
-}
-
-fn add_lifetime(mut generics: Generics, lifetime: Lifetime) -> Generics {
-    generics
-        .params
-        .insert(0, GenericParam::Lifetime(LifetimeDef::new(lifetime)));
-    generics
-}
-
-fn replace_lifetimes(mut generics: Generics, new: Lifetime) -> Generics {
-    for old in generics.lifetimes_mut() {
-        *old = LifetimeDef::new(new.clone());
-    }
-    generics
 }
 
 fn struct_constructor_call(ident: &Ident, fields: &Fields) -> TokenStream {
