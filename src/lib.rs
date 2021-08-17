@@ -5,4 +5,4 @@ pub use into_static::IntoStatic;
 pub use to_borrowed::ToBorrowed;
 
 #[cfg(feature = "macros")]
-pub use macros::ToBorrowed;
+pub use macros::{IntoStatic, ToBorrowed};
