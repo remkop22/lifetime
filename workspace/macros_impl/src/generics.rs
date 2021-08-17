@@ -1,10 +1,23 @@
 use syn::{GenericParam, Generics, Lifetime, LifetimeDef};
 
-pub(crate) fn has_generic_type(generics: &Generics) -> bool {
-    generics
-        .params
-        .iter()
-        .any(|p| matches!(p, GenericParam::Type(_)))
+pub(crate) fn assert_only_lifetime_params(generics: &Generics) {
+    for param in &generics.params {
+        match param {
+            GenericParam::Type(type_param) => {
+                panic!(
+                    "Generic type parameters are not supported. The type parameter is: \"{}\"",
+                    type_param.ident
+                )
+            }
+            GenericParam::Lifetime(_) => {}
+            GenericParam::Const(const_param) => {
+                panic!(
+                    "Const generic parameters are not supported. The const parameter is: \"{}\"",
+                    const_param.ident
+                )
+            }
+        }
+    }
 }
 
 pub(crate) fn add_lifetime(mut generics: Generics, lifetime: Lifetime) -> Generics {
