@@ -1,15 +1,13 @@
 use crate::{
     generics::{has_generic_type, replace_lifetimes},
-    ident::{tuple_field_ident, EnumVariantIdent},
+    ident::tuple_field_ident,
+    modified_clone::ModifiedClone,
     type_::type_has_generic_lifetime,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::convert::TryFrom;
-use syn::{
-    punctuated::Punctuated, token::Comma, Data, DataEnum, DeriveInput, Field, Fields, Ident, Index,
-    Lifetime, Variant,
-};
+use syn::{DeriveInput, Field, Index, Lifetime};
 
 pub fn derive(input: DeriveInput) -> TokenStream {
     let static_lifetime = Lifetime::new("'static", Span::mixed_site());
@@ -19,11 +17,13 @@ pub fn derive(input: DeriveInput) -> TokenStream {
     }
     let static_generics = replace_lifetimes(generics.clone(), static_lifetime);
     let ident = input.ident;
-    let fn_body = match &input.data {
-        Data::Struct(struct_data) => struct_constructor_call(&ident, &struct_data.fields),
-        Data::Enum(enum_data) => matched_enum_constructor_call(&ident, enum_data),
-        Data::Union(_) => panic!("only structs and enums are supported"),
-    };
+    let fn_body = ModifiedClone {
+        ident: &ident,
+        data: &input.data,
+        struct_field_init: &struct_field_initialization,
+        enum_field_init: &enum_field_initialization,
+    }
+    .expression();
     quote! {
         impl #generics lifetime::IntoStatic for #ident #generics {
             type Static = #ident #static_generics;
@@ -35,32 +35,6 @@ pub fn derive(input: DeriveInput) -> TokenStream {
             }
         }
     }
-}
-
-fn struct_constructor_call(ident: &Ident, fields: &Fields) -> TokenStream {
-    match fields {
-        Fields::Named(named_fields) => {
-            let fields_initialization = struct_fields_initialization(&named_fields.named);
-            quote! {
-                #ident { #fields_initialization }
-            }
-        }
-        Fields::Unnamed(unnamed_fields) => {
-            let fields_initialization = struct_fields_initialization(&unnamed_fields.unnamed);
-            quote! {
-                #ident(#fields_initialization)
-            }
-        }
-        Fields::Unit => panic!("unit structs are not supported"),
-    }
-}
-
-fn struct_fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
-    fields
-        .iter()
-        .enumerate()
-        .map(|(index, field)| struct_field_initialization(index, field))
-        .collect()
 }
 
 fn struct_field_initialization(index: usize, field: &Field) -> TokenStream {
@@ -92,73 +66,6 @@ fn struct_field_initialization(index: usize, field: &Field) -> TokenStream {
             }
         }
     }
-}
-
-fn matched_enum_constructor_call(enum_ident: &Ident, enum_data: &DataEnum) -> TokenStream {
-    let patterns_and_construction: TokenStream = enum_data
-        .variants
-        .iter()
-        .map(|variant| variant_pattern_and_construction(enum_ident, variant))
-        .collect();
-    quote! {
-        match self {
-            #patterns_and_construction
-        }
-    }
-}
-
-fn variant_pattern_and_construction(enum_ident: &Ident, variant: &Variant) -> TokenStream {
-    let ident = EnumVariantIdent {
-        enum_ident: enum_ident.clone(),
-        variant_ident: variant.ident.clone(),
-    };
-    match &variant.fields {
-        Fields::Named(f) => {
-            let enum_fields_pattern = enum_fields_pattern(&f.named);
-            let enum_fields_initialization = enum_fields_initialization(&f.named);
-            quote! {
-                #ident { #enum_fields_pattern } => #ident { #enum_fields_initialization },
-            }
-        }
-        Fields::Unnamed(f) => {
-            let enum_fields_pattern = enum_fields_pattern(&f.unnamed);
-            let enum_fields_initialization = enum_fields_initialization(&f.unnamed);
-            quote! {
-                #ident ( #enum_fields_pattern ) => #ident ( #enum_fields_initialization ),
-            }
-        }
-        Fields::Unit => todo!(),
-    }
-}
-
-fn enum_fields_pattern(fields: &Punctuated<Field, Comma>) -> TokenStream {
-    fields
-        .iter()
-        .enumerate()
-        .map(|(i, f)| enum_field_pattern(i, f))
-        .collect()
-}
-
-fn enum_field_pattern(index: usize, field: &Field) -> TokenStream {
-    match &field.ident {
-        Some(ident) => quote! {
-            #ident,
-        },
-        None => {
-            let tuple_field_ident = tuple_field_ident(index);
-            quote! {
-                #tuple_field_ident,
-            }
-        }
-    }
-}
-
-fn enum_fields_initialization(fields: &Punctuated<Field, Comma>) -> TokenStream {
-    fields
-        .iter()
-        .enumerate()
-        .map(|(index, field)| enum_field_initialization(index, field))
-        .collect()
 }
 
 fn enum_field_initialization(index: usize, field: &Field) -> TokenStream {
