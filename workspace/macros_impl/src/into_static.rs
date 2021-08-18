@@ -1,5 +1,5 @@
 use crate::{
-    generics::{assert_only_lifetime_params, replace_lifetimes},
+    generics::{assert_generics_are_supported, replace_lifetimes},
     ident::tuple_field_ident,
     modified_clone::ModifiedClone,
     type_::type_has_generic_lifetime,
@@ -12,7 +12,7 @@ use syn::{DeriveInput, Field, Index, Lifetime};
 pub fn derive(input: DeriveInput) -> TokenStream {
     let static_lifetime = Lifetime::new("'static", Span::mixed_site());
     let generics = input.generics;
-    assert_only_lifetime_params(&generics);
+    assert_generics_are_supported(&generics);
     let static_generics = replace_lifetimes(generics.clone(), &static_lifetime);
     let ident = input.ident;
     let fn_body = ModifiedClone {
@@ -215,6 +215,15 @@ mod tests {
     fn derive_struct_with_generic_const() {
         let input = quote! {
             struct Example<const N: usize>;
+        };
+        derive(parse(input));
+    }
+
+    #[test]
+    #[should_panic]
+    fn derive_struct_with_lifetime_constrains() {
+        let input = quote! {
+            struct Example<'a, 'b: 'a>(Cow<'a, str>, Cow<'b, str>);
         };
         derive(parse(input));
     }
