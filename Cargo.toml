@@ -5,7 +5,7 @@ edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"
 keywords = ["cow", "IntoStatic", "ToBorrowed", "borrow", "convert"]
-categories = ["rust-patterns"]
+categories = ["rust-patterns", "no-std"]
 repository = "https://gitlab.com/JonasJebing/lifetime"
 documentation = "https://docs.rs/lifetime/"
 readme = "readme.md"
@@ -19,6 +19,8 @@ members = ["workspace/macros_impl"]
 default-members = ["workspace/macros_impl"]
 
 [features]
+default = ["alloc"]
+alloc = []
 unstable = []
 
 [dependencies]

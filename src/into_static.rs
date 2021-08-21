@@ -1,28 +1,35 @@
-use std::borrow::Cow;
+#[cfg(feature = "alloc")]
+use alloc::borrow::{Cow, ToOwned};
 
 /// A trait for upgrading the lifetime of a type.
 ///
-/// # Examples
-/// ```
-/// use lifetime::IntoStatic;
-/// use std::borrow::Cow;
-///
-/// let string = String::from("Hi");
-/// let borrowed: Cow<'_, str> = Cow::Borrowed(&*string);
-/// let static_string: Cow<'static, str> = borrowed.into_static();
-///
-/// // we can still use static_string after this drop
-/// drop(string);
-///
-/// assert_eq!(static_string, "Hi");
-/// assert_matches::assert_matches!(static_string, Cow::Owned(_));
-/// ```
+#[cfg_attr(
+    feature = "alloc",
+    doc = r##"
+# Examples
+```rust
+use lifetime::IntoStatic;
+use std::borrow::Cow;
+
+let string = String::from("Hi");
+let borrowed: Cow<'_, str> = Cow::Borrowed(&*string);
+let static_string: Cow<'static, str> = borrowed.into_static();
+
+// we can still use static_string after this drop
+drop(string);
+
+assert_eq!(static_string, "Hi");
+assert_matches::assert_matches!(static_string, Cow::Owned(_));
+```
+"##
+)]
 pub trait IntoStatic {
     type Static: 'static;
 
     fn into_static(self) -> Self::Static;
 }
 
+#[cfg(feature = "alloc")]
 impl<'b, B> IntoStatic for Cow<'b, B>
 where
     B: ToOwned + ?Sized + 'static,
@@ -63,6 +70,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod tests {
     use super::*;
     use assert_matches::assert_matches;

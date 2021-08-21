@@ -1,27 +1,34 @@
-use std::borrow::{Borrow, Cow};
+#[cfg(feature = "alloc")]
+use alloc::borrow::{Borrow, Cow, ToOwned};
 
 /// A trait for downgrading the lifetime of a type.
 ///
-/// # Examples
-/// ```
-/// use lifetime::ToBorrowed;
-/// use std::borrow::Cow;
-///
-/// let owned: Cow<'static, str> = Cow::Owned(String::from("Hi"));
-/// let mut borrowed: Cow<'_, str> = owned.to_borrowed();
-///
-/// assert_eq!(borrowed, "Hi");
-/// assert_matches::assert_matches!(borrowed, Cow::Borrowed(_));
-///
-/// borrowed = Cow::Borrowed("Bye");
-/// assert_eq!(owned, "Hi");
-/// ```
+#[cfg_attr(
+    feature = "alloc",
+    doc = r##"
+# Examples
+```rust
+use lifetime::ToBorrowed;
+use std::borrow::Cow;
+
+let owned: Cow<'static, str> = Cow::Owned(String::from("Hi"));
+let mut borrowed: Cow<'_, str> = owned.to_borrowed();
+
+assert_eq!(borrowed, "Hi");
+assert_matches::assert_matches!(borrowed, Cow::Borrowed(_));
+
+borrowed = Cow::Borrowed("Bye");
+assert_eq!(owned, "Hi");
+```
+"##
+)]
 pub trait ToBorrowed {
     type Borrowed;
 
     fn to_borrowed(self) -> Self::Borrowed;
 }
 
+#[cfg(feature = "alloc")]
 impl<'b, 'c, B> ToBorrowed for &'c Cow<'b, B>
 where
     B: ToOwned + ?Sized + 'static,
@@ -46,6 +53,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 #[cfg(test)]
 mod tests {
     use super::*;

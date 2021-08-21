@@ -13,6 +13,21 @@ to enable macros.
 lifetime = { version = "x.y", features = ["macros"] }
 ```
 
+# no_std
+
+Use the following in your `Cargo.toml`,
+replacing `x.y` with the version you want,
+to disable the default `std` and `alloc` features.
+```toml
+[dependencies]
+lifetime = { version = "x.y", default-features = false }
+```
+
+*/
+#![cfg_attr(
+    feature = "alloc",
+    doc = r##"
+
 # Examples
 
 Note that the examples use explicit types and lifetimes to be more illustrative.
@@ -32,9 +47,11 @@ assert_eq!(borrowed_alice, alice);
 let static_alice: Cow<'static, str> = borrowed_alice.into_static();
 assert_eq!(static_alice, alice);
 ```
-*/
+
+"##
+)]
 #![cfg_attr(
-    feature = "macros",
+    all(feature = "macros", feature = "alloc"),
     doc = r##"
 Here's an example with a struct using the derive macros.
 The `macros` feature needs to be enabled.
@@ -65,6 +82,10 @@ assert_eq!(static_xml_or_json.value, "xml or json");
 "##
 )]
 #![forbid(unsafe_code)]
+#![no_std]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod into_static;
 mod to_borrowed;
