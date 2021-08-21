@@ -20,4 +20,4 @@ echo "---doc"
 cargo doc --workspace || exit
 echo
 echo "---doc --all-features"
-cargo doc --workspace || exit
+cargo doc --workspace --all-features || exit
