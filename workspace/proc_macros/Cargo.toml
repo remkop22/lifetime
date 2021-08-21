@@ -1,6 +1,6 @@
 [package]
 name = "lifetime_proc_macros"
-version = "0.1.0-test1"
+version = "0.1.0"
 edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -16,5 +16,5 @@ allowing efficient reuse of your stucts or enums with any lifetime requirement.
 proc-macro = true
 
 [dependencies]
-lifetime_proc_macros_impl = { version = "=0.1.0-test1", path = "../proc_macros_impl" }
+lifetime_proc_macros_impl = { version = "=0.1.0", path = "../proc_macros_impl" }
 syn = "1.0"

@@ -1,6 +1,6 @@
 [package]
 name = "lifetime_proc_macros_impl"
-version = "0.1.0-test1"
+version = "0.1.0"
 edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"

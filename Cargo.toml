@@ -1,6 +1,6 @@
 [package]
 name = "lifetime"
-version = "0.1.0-test1"
+version = "0.1.0"
 edition = "2018"
 authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -25,7 +25,7 @@ macros = ["lifetime_proc_macros"]
 unstable = []
 
 [dependencies]
-lifetime_proc_macros = { version = "=0.1.0-test1", path = "workspace/proc_macros", optional = true }
+lifetime_proc_macros = { version = "=0.1.0", path = "workspace/proc_macros", optional = true }
 
 [dev-dependencies]
 assert_matches = "1.5"
