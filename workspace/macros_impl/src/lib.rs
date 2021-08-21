@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod generics;
 mod ident;
 pub mod into_static;

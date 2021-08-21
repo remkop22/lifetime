@@ -8,7 +8,11 @@ keywords = ["cow", "IntoStatic", "ToBorrowed", "borrow", "convert"]
 categories = ["rust-patterns"]
 repository = "https://gitlab.com/JonasJebing/lifetime"
 documentation = "https://docs.rs/lifetime/"
-description = "Traits and derive macros for efficiently reusing your stucts or enums with any lifetime requirement"
+readme = "readme.md"
+description = """
+Traits and derive macros to change the lifetime of a type,
+allowing efficient reuse of your stucts or enums with any lifetime requirement.
+"""
 
 [workspace]
 members = ["workspace/macros_impl"]
@@ -22,3 +26,6 @@ macros = { path = "workspace/macros", optional = true }
 
 [dev-dependencies]
 assert_matches = "1.5"
+
+[package.metadata.docs.rs]
+all-features = true
