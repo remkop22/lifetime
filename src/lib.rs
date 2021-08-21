@@ -94,4 +94,4 @@ pub use into_static::IntoStatic;
 pub use to_borrowed::ToBorrowed;
 
 #[cfg(feature = "macros")]
-pub use macros::{IntoStatic, ToBorrowed};
+pub use lifetime_proc_macros::{IntoStatic, ToBorrowed};

@@ -1,0 +1,21 @@
+[package]
+name = "lifetime_proc_macros_impl"
+version = "0.1.0-test1"
+edition = "2018"
+authors = ["Jonas Jebing <noreply.jonas.8049@protonmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://gitlab.com/JonasJebing/lifetime"
+documentation = "https://docs.rs/lifetime/"
+readme = "../../readme.md"
+description = """
+Traits and derive macros to change the lifetime of a type,
+allowing efficient reuse of your stucts or enums with any lifetime requirement.
+"""
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "1.0", features = ["visit"] }
+
+[dev-dependencies]
+syn = { version = "1.0", features = ["full", "extra-traits"] }

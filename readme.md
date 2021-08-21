@@ -5,6 +5,13 @@ allowing efficient reuse of your stucts or enums with any lifetime requirement.
 
 Have a look at the [documentation](https://docs.rs/lifetime/) for more information.
 
+## Install
+
+```toml
+[dependencies]
+lifetime = { version = "x.y", features = ["macros"] }
+```
+
 ## Safety
 
 This crate uses `#![forbid(unsafe_code)]`.
