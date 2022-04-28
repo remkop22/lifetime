@@ -1,5 +1,6 @@
 #[cfg(feature = "alloc")]
 use alloc::borrow::{Cow, ToOwned};
+use alloc::vec::Vec;
 
 /// A trait for upgrading the lifetime of a type.
 ///
@@ -41,6 +42,45 @@ where
         Cow::Owned(self.into_owned())
     }
 }
+
+#[cfg(feature = "alloc")]
+impl<T> IntoStatic for Vec<T>
+where
+    T: IntoStatic,
+{
+    type Static = Vec<T::Static>;
+
+    #[inline]
+    fn into_static(self) -> Vec<T::Static> {
+        self.into_iter().map(IntoStatic::into_static).collect()
+    }
+}
+
+macro_rules! impl_tuple {
+    ($($T:ident),+) => {
+        impl<$($T),+> IntoStatic for ($($T),+)
+        where
+            $($T: IntoStatic),+
+        {
+            type Static = ($($T::Static),+);
+
+            #[allow(non_snake_case)]
+            fn into_static(self) -> Self::Static {
+                let ($($T,)+) = self;
+                ($($T.into_static()),+)
+            }
+        }
+    };
+}
+
+impl_tuple!(A, B);
+impl_tuple!(A, B, C);
+impl_tuple!(A, B, C, D);
+impl_tuple!(A, B, C, D, E);
+impl_tuple!(A, B, C, D, E, F);
+impl_tuple!(A, B, C, D, E, F, G);
+impl_tuple!(A, B, C, D, E, F, G, H);
+impl_tuple!(A, B, C, D, E, F, G, H, I);
 
 impl<T> IntoStatic for Option<T>
 where
